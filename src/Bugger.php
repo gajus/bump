@@ -6,24 +6,27 @@ namespace Gajus\Bugger;
  * @link https://github.com/gajus/bump for the canonical source repository
  * @license https://github.com/gajus/bump/blob/master/LICENSE BSD 3-Clause
  */
-class Bugger {
-    static private
-        $tracestack = [],
-        $ticks = [];
+class Bugger
+{
+
+    static private $traceStack = [];
+    static private $ticks = [];
 
     /**
-     * Terminates the script, discards the output buffer, dumps information about the expression including backtrace up to the `trace` call.
+     * Terminates the script, discards the output buffer,
+     * dumps information about the expression including backtrace up to the `trace` call.
      * 
      * @param mixed $expression The variable you want to dump.
      * @return null
      * @codeCoverageIgnore
      */
-    static public function trace ($expression = null) {
+    public static function trace ($expression = null)
+    {
         while (ob_get_level()) {
             ob_end_clean();
         }
 
-        static::$tracestack = [static::getBacktrace()];
+        static::$traceStack = [static::getBacktrace()];
 
         exit;
     }
@@ -35,12 +38,13 @@ class Bugger {
      * @return null
      * @codeCoverageIgnore
      */
-    static public function stack ($expression = null) {
+    public static function stack ($expression = null)
+    {
         while (ob_get_level()) {
             ob_end_clean();
         }
 
-        static::$tracestack[] = static::getBacktrace();
+        static::$traceStack[] = static::getBacktrace();
 
         ob_start();
     }
@@ -53,7 +57,8 @@ class Bugger {
      * @param string $namespace Itteration namespace.
      * @return boolean
      */
-    static public function tick ($true_after = 0, $namespace = 'default') {
+    public static function tick ($true_after = 0, $namespace = 'default')
+    {
         if (!isset(static::$ticks[$namespace])) {
             static::$ticks[$namespace] = 0;
         }
@@ -65,7 +70,8 @@ class Bugger {
      * @return array
      * @codeCoverageIgnore
      */
-    static private function getBacktrace () {
+    private static function getBacktrace ()
+    {
         $backtrace = debug_backtrace();
 
         foreach ($backtrace as $i => $b) {
@@ -95,7 +101,7 @@ class Bugger {
      * @param array $args Array of values
      * @return array
      */
-    static private function getArgumentsDump(array $args)
+    private static function getArgumentsDump(array $args)
     {
         $output = array();
 
@@ -104,8 +110,7 @@ class Bugger {
             ob_start();
             var_dump($arg);
 
-            // If xdebug is enabled and the var_dump method is overloaded, we need 
-            // to treat the output differently.
+            /* If xdebug is enabled and the var_dump method is overloaded, we need to treat the output differently. */
             if (ini_get('xdebug.overload_var_dump')) {
                 $dump = strip_tags(ob_get_clean()) . "\n";
             } else {
@@ -123,12 +128,14 @@ class Bugger {
     /**
      * Convert control characters to hex representation.
      * Refer to http://stackoverflow.com/a/8171868/368691
-     * 
+     *
      * @todo This implementation will not be able to represent pack('S', 65535).
      * @param string $output
+     * @throws Exception\ErrorException
      * @return string
      */
-    static private function sanitise ($output) {
+    private static function sanitise ($output)
+    {
         $regex_encoding = mb_regex_encoding();
 
         mb_regex_encoding('UTF-8');
@@ -150,23 +157,27 @@ class Bugger {
 
     /**
      * Match everything that looks like a timestamp and convert it to a human readable date-time format.
-     * 
+     *
      * @param string $output
+     * @throws Exception\ErrorException
      * @return string
      */
-    static private function translateTimestamp ($output) {
+    private static function translateTimestamp ($output)
+    {
         $regex_encoding = mb_regex_encoding();
 
-        $output = \mb_ereg_replace_callback('int[\(| ]([0-9]{10})\)?', function ($e) {
-            if ($e[1] < mktime(0,0,0,1,1,2000) || $e[1] > mktime(0,0,0,1,1,2020)) {
-                return $e[0];
+        $output = \mb_ereg_replace_callback('int[\(| ]([0-9]{10})\)?', function ($error) {
+            if ($error[1] < mktime(0, 0, 0, 1, 1, 2000) || $error[1] > mktime(0, 0, 0, 1, 1, 2020)) {
+                return $error[0];
             }
 
-            return $e[0] . ' <== ' . date('Y-m-d H:i:s', $e[1]);
+            return $error[0] . ' <== ' . date('Y-m-d H:i:s', $error[1]);
         }, $output);
 
         if ($output === false) {
-            throw new Exception\ErrorException('PCRE error ocurred while attempting to replace timestamp values with human-friedly format.');
+            throw new Exception\ErrorException(
+                'PCRE error ocurred while attempting to replace timestamp values with human-friedly format.'
+            );
             
             # var_dump( array_flip(get_defined_constants(true)['pcre'])[preg_last_error()] );
         }
@@ -179,11 +190,13 @@ class Bugger {
     /**
      * @return array
      */
-    static public function getTracestack () {
-        return static::$tracestack;
+    public static function getTracestack ()
+    {
+        return static::$traceStack;
     }
 
-    static public function resetTick () {
+    public static function resetTick ()
+    {
         static::$ticks = [];
     }
 }
